@@ -1,102 +1,146 @@
+
 import {
-    Button,
-    FormControl,
-    FormErrorMessage,
-    FormLabel,
-    Input,
-    Modal,
-    ModalBody,
-    ModalCloseButton,
-    ModalContent,
-    ModalFooter,
-    ModalHeader,
-    ModalOverlay,
-  } from "@chakra-ui/react"
+  Button,
+  FormControl,
+  FormErrorMessage,
+  FormLabel,
+  Input,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Switch,
+  VStack,
+} from "@chakra-ui/react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { type SubmitHandler, useForm } from "react-hook-form";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { type SubmitHandler, useForm } from "react-hook-form"
+import { type ApiError,  ItemsService } from "../../client";
+import useCustomToast from "../../hooks/useCustomToast";
+import { handleError } from "../../utils";
+// import  SMCFormData from "../../routes/_layout/smc"
 
-import { type ApiError, type ItemCreate, ItemsService } from "../../client"
-import useCustomToast from "../../hooks/useCustomToast"
-import { handleError } from "../../utils"
-interface AddItemProps {
-  isOpen: boolean
-  onClose: () => void
+ 
+interface SMCFormData {
+  name: string;
+  a: string;
+  b: string;
+  DWT: string;
+  SMC: boolean;
+  comment: string;
+  WiRMBond: string;
+  WiRMNonStd: string;
+}
+interface AddSMCProps {
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-const AddSmc = ({ isOpen, onClose }: AddItemProps) => {
-  const queryClient = useQueryClient()
-  const showToast = useCustomToast()
+
+const AddSMC = ({ isOpen, onClose }: AddSMCProps) => {
+  const queryClient = useQueryClient();
+  const showToast = useCustomToast();
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<ItemCreate>({
+  } = useForm<SMCFormData>({
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues: {
-      title: "",
-      description: "",
+      name: "",
+      a: "",
+      b: "",
+      DWT: "",
+      SMC: false,
+      comment: "",
+      WiRMBond: "",
+      WiRMNonStd: "",
     },
-  })
+  });
 
   const mutation = useMutation({
-    mutationFn: (data: ItemCreate) =>
-      ItemsService.createItem({ requestBody: data }),
+    mutationFn: (data: SMCFormData) => ItemsService.createItem({ requestBody: { ...data, title: data.name }  }), // замените createSMC на существующий метод
     onSuccess: () => {
-      showToast("Success!", "Item created successfully.", "success")
-      reset()
-      onClose()
+      showToast("Success!", "SMC record created successfully.", "success");
+      reset();
+      onClose();
     },
     onError: (err: ApiError) => {
-      handleError(err, showToast)
+      handleError(err, showToast);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["items"] })
+      queryClient.invalidateQueries({ queryKey: ["smc"] });
     },
-  })
-
-  const onSubmit: SubmitHandler<ItemCreate> = (data) => {
-    mutation.mutate(data)
-  }
+  });
+  const onSubmit: SubmitHandler<SMCFormData> = (data) => {
+    mutation.mutate(data);
+  };
 
   return (
     <>
-      <Modal
-        isOpen={isOpen}
-        onClose={onClose}
-        size={{ base: "sm", md: "md" }}
-        isCentered
-      >
+      <Modal isOpen={isOpen} onClose={onClose} size={{ base: "sm", md: "md" }} isCentered>
         <ModalOverlay />
         <ModalContent as="form" onSubmit={handleSubmit(onSubmit)}>
-          <ModalHeader>Add Item</ModalHeader>
+          <ModalHeader>Add SMC Record</ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={6}>
-            <FormControl isRequired isInvalid={!!errors.title}>
-              <FormLabel htmlFor="title">Title</FormLabel>
-              <Input
-                id="title"
-                {...register("title", {
-                  required: "Title is required.",
-                })}
-                placeholder="Title"
-                type="text"
-              />
-              {errors.title && (
-                <FormErrorMessage>{errors.title.message}</FormErrorMessage>
-              )}
-            </FormControl>
-            <FormControl mt={4}>
-              <FormLabel htmlFor="description">Description</FormLabel>
-              <Input
-                id="description"
-                {...register("description")}
-                placeholder="Description"
-                type="text"
-              />
-            </FormControl>
+            <VStack spacing={4} align="stretch">
+              <FormControl isRequired isInvalid={!!errors.name}>
+                <FormLabel htmlFor="name">Name</FormLabel>
+                <Input
+                  id="name"
+                  {...register("name", { required: "Name is required." })}
+                  placeholder="Enter test name"
+                />
+                <FormErrorMessage>{errors.name && errors.name.message}</FormErrorMessage>
+              </FormControl>
+
+              <FormControl isInvalid={!!errors.a}>
+                <FormLabel htmlFor="a">Parameter A</FormLabel>
+                <Input id="a" {...register("a")} placeholder="Enter value for A" />
+                <FormErrorMessage>{errors.a && errors.a.message}</FormErrorMessage>
+              </FormControl>
+
+              <FormControl isInvalid={!!errors.b}>
+                <FormLabel htmlFor="b">Parameter B</FormLabel>
+                <Input id="b" {...register("b")} placeholder="Enter value for B" />
+                <FormErrorMessage>{errors.b && errors.b.message}</FormErrorMessage>
+              </FormControl>
+
+              <FormControl isInvalid={!!errors.DWT}>
+                <FormLabel htmlFor="DWT">DWT</FormLabel>
+                <Input id="DWT" {...register("DWT")} placeholder="Enter DWT value" />
+                <FormErrorMessage>{errors.DWT && errors.DWT.message}</FormErrorMessage>
+              </FormControl>
+
+              <FormControl>
+                <FormLabel htmlFor="SMC">SMC</FormLabel>
+                <Switch id="SMC" {...register("SMC")} />
+              </FormControl>
+
+              <FormControl isInvalid={!!errors.comment}>
+                <FormLabel htmlFor="comment">Comment</FormLabel>
+                <Input id="comment" {...register("comment")} placeholder="Enter comments" />
+                <FormErrorMessage>{errors.comment && errors.comment.message}</FormErrorMessage>
+              </FormControl>
+
+              <FormControl isInvalid={!!errors.WiRMBond}>
+                <FormLabel htmlFor="WiRMBond">WiRM Bond</FormLabel>
+                <Input id="WiRMBond" {...register("WiRMBond")} placeholder="Enter WiRM Bond value" />
+                <FormErrorMessage>{errors.WiRMBond && errors.WiRMBond.message}</FormErrorMessage>
+              </FormControl>
+
+              <FormControl isInvalid={!!errors.WiRMNonStd}>
+                <FormLabel htmlFor="WiRMNonStd">WiRM Non-Std</FormLabel>
+                <Input id="WiRMNonStd" {...register("WiRMNonStd")} placeholder="Enter WiRM Non-Std value" />
+                <FormErrorMessage>{errors.WiRMNonStd && errors.WiRMNonStd.message}</FormErrorMessage>
+              </FormControl>
+            </VStack>
           </ModalBody>
 
           <ModalFooter gap={3}>
@@ -108,7 +152,7 @@ const AddSmc = ({ isOpen, onClose }: AddItemProps) => {
         </ModalContent>
       </Modal>
     </>
-  )
-}
+  );
+};
 
-export default AddSmc
+export default AddSMC;
